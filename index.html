@@ -293,7 +293,7 @@ input[type=range] { width: 100%; min-width: 0; height: 36px; accent-color: var(-
     if (srcURL) URL.revokeObjectURL(srcURL);
     srcURL = URL.createObjectURL(f);
     fileName = f.name.replace(/\.[^.]+$/, "");
-    vid.src = srcURL;
+    vid.src = srcURL; vid.load(); $("tag").textContent = "Chargement…";
     $("fileinfo").textContent = f.name;
     $("result").hidden = true;
   }
@@ -301,14 +301,23 @@ input[type=range] { width: 100%; min-width: 0; height: 36px; accent-color: var(-
   ["filebtn", "ovbtn"].forEach(function (id) {
     $(id).addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.click(); } });
   });
-  vid.addEventListener("loadeddata", function () {
-    hasVideo = true; setupAudio();
+  var readySrc = null;
+  function onReady() {
+    if (hasVideo && readySrc === vid.src) return;
+    hasVideo = true; readySrc = vid.src; setupAudio();
     $("tag").textContent = "Ton clip"; $("fileinfo").classList.remove("empty"); $("play").disabled = false; $("seek").disabled = false; $("export").disabled = false;
     var ratio = vid.videoWidth / vid.videoHeight;
     if (Math.abs(ratio - 16 / 9) > 0.05) $("fileinfo").textContent += " : attention, ce clip n'est pas en 16:9 (" + vid.videoWidth + "×" + vid.videoHeight + ").";
-    vid.currentTime = 0; updateTime();
-  });
-  vid.addEventListener("error", function () { $("fileinfo").textContent = "Ce fichier ne peut pas être lu par ton navigateur. Essaie un MP4 (H.264)."; });
+    updateTime();
+    // iOS ne décode aucune image tant que la vidéo n'a pas démarré : on la lance 1 instant en muet
+    try {
+      vid.muted = true; var pp = vid.play();
+      if (pp && pp.then) pp.then(function () { vid.pause(); vid.muted = false; vid.currentTime = 0; }).catch(function () { vid.muted = false; vid.currentTime = 0.05; });
+    } catch (e) { vid.muted = false; }
+  }
+  vid.addEventListener("loadedmetadata", onReady);
+  vid.addEventListener("loadeddata", onReady);
+  vid.addEventListener("error", function () { $("tag").textContent = "Fichier illisible"; $("fileinfo").textContent = "Ce fichier ne peut pas être lu par ton navigateur. Essaie un MP4 (H.264)."; });
   $("ovFile").addEventListener("change", function () {
     var f = this.files[0]; if (!f) return;
     var u = URL.createObjectURL(f); overlay = new Image(); overlay.onload = draw; overlay.src = u;
