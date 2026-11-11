@@ -39,6 +39,10 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.primary:hover { background: #6D28D9; }
 #filebtn { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 0 #5B21B6; }
 .btn.small { min-height: 36px; padding: 0 12px; font-size: 13px; border-radius: 99px; }
+#refresh { width: 36px; min-height: 36px; padding: 0; border-radius: 50%; background: #fff; color: var(--accent); border-color: var(--line); box-shadow: 0 2px 0 var(--accent-2); flex: none; }
+#refresh svg { width: 18px; height: 18px; }
+#refresh.spin svg { animation: spin .5s ease; }
+@keyframes spin { to { transform: rotate(360deg); } }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input[type=file] { display: none; }
 .stage { flex: 1 1 0; min-height: 0; container-type: size; display: flex; align-items: center; justify-content: center; padding: 4px 14px 8px; }
@@ -88,6 +92,7 @@ input[type=range] { width: 100%; min-width: 0; height: 36px; accent-color: var(-
   <header class="top">
     <h1><mark>clodeau</mark><small>vertical</small></h1>
     <span class="fileinfo" id="fileinfo">Exemple affiché</span>
+    <button id="refresh" title="Revenir aux réglages par défaut" aria-label="Revenir aux réglages par défaut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
     <label class="btn small" for="file" id="filebtn" tabindex="0">Choisir un clip</label>
     <input type="file" id="file" accept="video/*">
   </header>
@@ -201,7 +206,11 @@ input[type=range] { width: 100%; min-width: 0; height: 36px; accent-color: var(-
     $("ovOn").checked = !!P.ovOn;
   }
   $("ovOn").addEventListener("change", function () { P.ovOn = this.checked; persist(); draw(); });
-  $("reset").addEventListener("click", function () { Object.assign(P, DEFAULTS); syncCtrls(); persist(); draw(); });
+  function resetAll() { Object.assign(P, DEFAULTS, { ovOn: true }); syncCtrls(); persist(); draw(); }
+  $("reset").addEventListener("click", resetAll);
+  $("refresh").addEventListener("click", function () {
+    resetAll(); var b = this; b.classList.remove("spin"); void b.offsetWidth; b.classList.add("spin");
+  });
   syncCtrls();
 
   // ---------- rendu ----------
